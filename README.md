@@ -40,9 +40,10 @@ the debugging example.
 ## Build
 
 following make targets are available
-* all - compile into object
-* lib - compile into object and pack with ar to static lib
-* debug - compile with main and create debug executable
+
+* all: compile into object
+* lib: compile into object and pack with ar to static lib
+* debug: compile with main and create debug executable
 
 ## Methods
 
