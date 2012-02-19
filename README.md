@@ -1,4 +1,4 @@
-# librecjar
+# librj
 
 Library under MIT license for reading/writing record jar formatted text files
 as described in "The record-jar Format" in draft
