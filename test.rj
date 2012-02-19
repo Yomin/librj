@@ -1,0 +1,21 @@
+%%encoding: US-ASCII
+ invalid beginning fold line
+field1: value1_r1
+field2	 :   value2   
+: no field name
+again no field name
+no value:   
+
+field3	:	tabulared field
+ folded line
+same: bla
+%% comment
+%% multi line comment
+field4:continuation value     \  
+  about multiple lines   \
+ with\nescape\\characters   \
+same: bla
+field1: value1_r2
+%%
+r3: v3
+%% last line comment
