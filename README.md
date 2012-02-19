@@ -33,17 +33,19 @@ matching criteria is used the normal methods are sufficient.
 
 ## Example
 
-An example is included mainly for debugging purposes at the end of the lib.
+An example is included mainly for testing purposes at the end of the lib.
 Therefore an example file named test.rj is also included which is read by
-the debugging example.
+the testing example.
 
 ## Build
 
 following make targets are available
 
 * all: compile into object
+* debug: compile into object with debug symbols
 * lib: compile into object and pack with ar to static lib
-* debug: compile with main and create debug executable
+* debuglib: compile into object with debug symbols and pack with ar to static lib
+* test: compile with main and create test executable
 
 ## Methods
 

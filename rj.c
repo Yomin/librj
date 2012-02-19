@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include "librj.h"
+#include "rj.h"
 #include <sys/queue.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -676,43 +676,55 @@ void show_func(int next, char** field, char** value, void* vstate)
 
 int main(int argc, char* argv[])
 {
+    char* file;
+    int test = 0;
+    switch(argc)
+    {
+        case 1: file = (char*) "test.rj"; test = 1; break;
+        case 2: file = argv[1]; break;
+        default: printf("Usage: %s [<file>]\n", argv[0]); return 1;
+    }
+    
     struct recordjar rj;
-    if(rj_load("test.rj", &rj))
+    if(rj_load(file, &rj))
         return -1;
     
-    printf("%i records\n", rj.size);
+    printf("%i records\n\n", rj.size);
     
     struct show_state state;
     state.rc = 0;
     state.fc = 0;
     rj_mapfold(show_func, &state, &rj);
     
-    rj_save("test.test", &rj) ? printf("not saved\n") : printf("saved\n");
-    
-    printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-    printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-    printf("%s\n", rj_get_next("same", "bla", "field1", "not found", &rj));
-    printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-    printf("%s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
-    printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-    printf("%s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
-    
-    printf("%s\n", rj_get("nothere", "bla", "field1", "not found", &rj));
-    printf("%s\n", rj_get("same", "nothere", "field1", "not found", &rj));
-    printf("%s\n", rj_get("same", "bla", "nothere", "not found", &rj));
-    
-    rj_add("field2", "value2", "new field", "new value", &rj);
-    printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
-    rj_add("notexisting", "keyval", "new one", "new value", &rj);
-    printf("%s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
-    
-    rj_set("field2", "value2", "new field", "other", &rj);
-    printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
-    
-    rj_del_field("field2", "value2", "new field", &rj);
-    printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
-    rj_del_record("new one", "new value", &rj);
-    printf("%s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
+    if(test)
+    {
+        rj_save("test.test", &rj) ? printf("not saved\n") : printf("saved\n");
+        
+        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("%s\n", rj_get_next("same", "bla", "field1", "not found", &rj));
+        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("%s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
+        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("%s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
+        
+        printf("%s\n", rj_get("nothere", "bla", "field1", "not found", &rj));
+        printf("%s\n", rj_get("same", "nothere", "field1", "not found", &rj));
+        printf("%s\n", rj_get("same", "bla", "nothere", "not found", &rj));
+        
+        rj_add("field2", "value2", "new field", "new value", &rj);
+        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        rj_add("notexisting", "keyval", "new one", "new value", &rj);
+        printf("%s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
+        
+        rj_set("field2", "value2", "new field", "other", &rj);
+        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        
+        rj_del_field("field2", "value2", "new field", &rj);
+        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        rj_del_record("new one", "new value", &rj);
+        printf("%s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
+    }
     
     rj_free(&rj);
     

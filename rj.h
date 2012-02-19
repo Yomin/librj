@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __LIBRJ_H__
-#define __LIBRJ_H__
+#ifndef __RJ_H__
+#define __RJ_H__
 
 struct recordjar
 {

@@ -1,20 +1,31 @@
-.PHONY: all, lib, clean, debug
+.PHONY: all, debug, lib, debuglib, clean, touch
 
-all: librj.o
+all: debug =
+all: rj.o
 
-debug: librj
+debug: debug = -ggdb
+debug: rj.o
 
-lib: librj.a
+lib: debug =
+lib: touch librj.a
+
+debuglib: debug = -ggdb
+debuglib: touch librj.a
 
 clean:
 	find . -maxdepth 1 ! -type d \( -perm -111 -or -name "*\.a" -or -name "*\.o" -or -name "*\.test" \) -exec rm {} \;
 
 
-librj.o: librj.c
-	gcc -Wall -c -D NDEBUG -o $@ $<
+rj.o: rj.c
+	gcc -Wall -c $(debug) -D NDEBUG -o $@ $<
 
-librj.a: librj.o
+librj.a: rj.o
 	ar rcs $@ $<
 
-librj: librj.c
+test: rj.c
 	gcc -Wall -ggdb -o $@ $<
+
+
+touch:
+	$(shell [ -f debug -a -z "$(debug)" ] && { touch rj.c; rm debug; })
+	$(shell [ ! -f debug -a -n "$(debug)" ] && { touch rj.c; touch debug; })
