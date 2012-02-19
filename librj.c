@@ -656,7 +656,7 @@ found:
 
 // DEBUG
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 
 struct show_state
 {

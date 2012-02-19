@@ -11,10 +11,10 @@ clean:
 
 
 librj.o: librj.c
-	gcc -Wall -c -o $@ $<
+	gcc -Wall -c -D NDEBUG -o $@ $<
 
 librj.a: librj.o
 	ar rcs $@ $<
 
 librj: librj.c
-	gcc -Wall -D NDEBUG -ggdb -o $@ $<
+	gcc -Wall -ggdb -o $@ $<
