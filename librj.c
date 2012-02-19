@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef NDEBUG
+#ifndef NDEBUG
 #   define DEBUG(x) x
 #else
 #   define DEBUG(x) while(0)
