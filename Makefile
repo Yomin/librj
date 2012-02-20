@@ -1,16 +1,10 @@
 .PHONY: all, debug, lib, debuglib, clean, touch
 
 all: debug =
-all: rj.o
+all: touch librj.a
 
 debug: debug = -ggdb
-debug: rj.o
-
-lib: debug =
-lib: touch librj.a
-
-debuglib: debug = -ggdb
-debuglib: touch librj.a
+debug: touch librj.a
 
 clean:
 	find . -maxdepth 1 ! -type d \( -perm -111 -or -name "*\.a" -or -name "*\.o" -or -name "*\.test" \) -exec rm {} \;

@@ -41,10 +41,8 @@ the testing example.
 
 following make targets are available
 
-* all: compile into object
-* debug: compile into object with debug symbols
-* lib: compile into object and pack with ar to static lib
-* debuglib: compile into object with debug symbols and pack with ar to static lib
+* all: compile into object and pack with ar to static lib
+* debug: compile into object with debug symbols and pack with ar to static lib
 * test: compile with main and create test executable
 
 ## Methods
