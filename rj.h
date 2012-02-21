@@ -25,13 +25,19 @@
 #ifndef __RJ_H__
 #define __RJ_H__
 
+#define RJ_INFO_REC_FIRST 1
+#define RJ_INFO_REC_LAST  2
+#define RJ_INFO_FLD_FIRST 4
+#define RJ_INFO_FLD_LAST  8
+
 struct recordjar
 {
     int size;
     void *jar, *rec;
 };
 
-typedef void rj_mapfold_func(int next, char** field, char** value, void* state);
+typedef void rj_mapfold_func(int info, char** field, char** value,
+    void* state, struct recordjar* rj);
 
 int  rj_load(const char* file, struct recordjar* rj);
 int  rj_save(const char* file, struct recordjar* rj);

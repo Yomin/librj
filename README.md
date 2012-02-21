@@ -16,7 +16,8 @@ saved back with the record into the file.)
 
 The records are stored in a double linked circular list.
 A record is identified by a matching field and its value hereinafter called
-matching criteria.
+matching criteria. If one or both values of the matching criteria is NULL
+the current record matches this value always.
 
 After retrieving/creating/setting values the containing record is stored.
 At future invocations of these methods this record is searched first.
@@ -67,7 +68,9 @@ following make targets are available
 
 * map a function from type rj_mapfold_func over all field-value pairs
   of the given jar
-* a pointer to some state is passed to every call
+* pointers to some state and the recordjar struct itself is passed to every call
+* an also passed info variable contains knowledge about the current elements
+  position
 
 ### rj_get, rj_get_next, rj_get_prev
 

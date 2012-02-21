@@ -84,9 +84,9 @@ int rj_load(const char* file, struct recordjar* rj)
     CIRCLEQ_INIT(j);
     
     struct chain_record* cr = (struct chain_record*) malloc(sizeof(struct chain_record));
-    CIRCLEQ_INSERT_HEAD(j, cr, chain);
+    CIRCLEQ_INSERT_TAIL(j, cr, chain);
     struct record* r = &cr->rec;
-    rj->rec = r;
+    rj->rec = cr;
     LIST_INIT(r);
     
     rj->size = 0;
@@ -167,10 +167,9 @@ int rj_load(const char* file, struct recordjar* rj)
                 DEBUG(printf("  new record\n"));
                 prevrec = cr;
                 cr = (struct chain_record*) malloc(sizeof(struct chain_record));
-                CIRCLEQ_INSERT_HEAD(j, cr, chain);
+                CIRCLEQ_INSERT_TAIL(j, cr, chain);
                 r = &cr->rec;
                 LIST_INIT(r);
-                rj->rec = cr;
             }
             prevtype = PREV_COMMENT;
         }
@@ -216,10 +215,9 @@ int rj_load(const char* file, struct recordjar* rj)
     if(prevtype == PREV_COMMENT)
     {
         DEBUG(printf("remove empty last record\n"));
-        struct chain_record* cr = j->cqh_first;
+        struct chain_record* cr = j->cqh_last;
         CIRCLEQ_REMOVE(j, cr, chain);
         free(cr);
-        rj->rec = prevrec;
     }
     
     if(line)
@@ -290,17 +288,22 @@ void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)
 {
     struct jar* j = (struct jar*) rj->jar;
     struct chain_record* r = j->cqh_first;
+    int rec_first = 1;
     while(1)
     {
-        int next = 1;
+        int fld_first = 1;
+        int rec_last = r->chain.cqe_next == (void*)j;
         struct chain_field* f = r->rec.lh_first;
         while(f)
         {
-            func(next, &f->field, &f->value, state);
+            int fld_last = f->chain.le_next == 0;
+            int info = rec_first | rec_last<<1 | fld_first<<2 | fld_last<<3;
+            func(info, &f->field, &f->value, state, rj);
             f = f->chain.le_next;
-            next = 0;
+            fld_first = 0;
         }
         r = r->chain.cqe_next;
+        rec_first = 0;
         if(r == (void*)j)
             break;
     }
@@ -570,18 +573,19 @@ char* mod(int mode, const char* key, const char* keyval,
         f = r->rec.lh_first;
         while(f)
         {
-            if(!strcmp(f->field, key) && !strcmp(f->value, keyval))
-            {
-                if(found || (mode & MOD_DEL_REC))
-                    goto found;
-                found = 1;
-            }
-            else if(field && !strcmp(f->field, field))
+            if(found != 2 && field && !strcmp(f->field, field))
             {
                 modf = f;
                 if(found)
                     goto found;
                 found = 2;
+            }
+            else if(found != 1 && (!key || !strcmp(f->field, key)) &&
+                (!keyval || !strcmp(f->value, keyval)))
+            {
+                if(found || (mode & MOD_DEL_REC))
+                    goto found;
+                found = 1;
             }
             if(!f->chain.le_next && found == 1 && (mode & MOD_ADD))
                 goto found;
@@ -663,15 +667,16 @@ struct show_state
     int rc, fc;
 };
 
-void show_func(int next, char** field, char** value, void* vstate)
+void show_func(int info, char** field, char** value,
+    void* vstate, struct recordjar* rj)
 {
     struct show_state* state = (struct show_state*) vstate;
-    if(next)
+    if(info & RJ_INFO_FLD_FIRST)
     {
-        printf("record %i:\n", state->rc++);
+        printf("record %i:\n", ++state->rc);
         state->fc = 0;
     }
-    printf("    field %i: %s: %s\n", state->fc++, *field, *value);
+    printf("    field %i: %s: %s\n", ++state->fc, *field, *value);
 }
 
 int main(int argc, char* argv[])
