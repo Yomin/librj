@@ -90,6 +90,21 @@ int rj_set_prev(
     const char* field, const char* value,
     struct recordjar* rj);
 
+int rj_app(
+    const char* key, const char* keyval,
+    const char* field, const char* value, const char* delim,
+    struct recordjar* rj);
+
+int rj_app_next(
+    const char* key, const char* keyval,
+    const char* field, const char* value, const char* delim,
+    struct recordjar* rj);
+
+int rj_app_prev(
+    const char* key, const char* keyval,
+    const char* field, const char* value, const char* delim,
+    struct recordjar* rj);
+
 int rj_del_record(
     const char* key, const char* keyval, struct recordjar* rj);
 

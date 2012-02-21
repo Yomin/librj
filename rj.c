@@ -37,26 +37,24 @@
 #define PREV_FIELD   1
 #define PREV_COMMENT 2
 
-#define ESCAPE_APPEND    0
-#define ESCAPE_OVERWRITE 1
-
 #define MOD_MASK_DIR ((1<<3)-1)
 #define MOD_THIS (1<<0)
 #define MOD_NEXT (1<<1)
 #define MOD_PREV (1<<2)
 
-#define MOD_MASK_METHOD (((1<<8)-1) & ~MOD_MASK_DIR)
+#define MOD_MASK_METHOD (((1<<9)-1) & ~MOD_MASK_DIR)
 #define MOD_GET (1<<3)
 #define MOD_SET (1<<4)
-#define MOD_ADD (1<<5)
-#define MOD_DEL (1<<6)
-#define MOD_DEL_REC (1<<7)
+#define MOD_APP (1<<5)
+#define MOD_ADD (1<<6)
+#define MOD_DEL (1<<7)
+#define MOD_DEL_REC (1<<8)
 
 int trim(char** str);
-int escape(char** dest, const char* src, int mode);
-int escape_rev(char** dest, const char* src, int mode);
+int escape(char** dest, const char* src, const char* delim);
+int escape_rev(char** dest, const char* src, const char* delim);
 char* mod(int mode, const char* key, const char* keyval,
-    const char* field, const char* elem, struct recordjar* rj);
+    const char* field, const char* elem1, const char* elem2, struct recordjar* rj);
 
 struct chain_field
 {
@@ -154,7 +152,7 @@ int rj_load(const char* file, struct recordjar* rj)
                     value[newlen-1] = 0;
                     --newlen;
                 }
-                escape_rev(&f->value, value, ESCAPE_APPEND);
+                escape_rev(&f->value, value, ""); // append
             }
             else
                 DEBUG(printf("  error beginning fold line\n"));
@@ -201,7 +199,7 @@ int rj_load(const char* file, struct recordjar* rj)
                     f->field = (char*) malloc((fieldlen+1)*sizeof(char));
                     strcpy(f->field, field);
                     f->value = 0;
-                    escape_rev(&f->value, value, ESCAPE_OVERWRITE);
+                    escape_rev(&f->value, value, 0); // overwrite
                     
                     if(!rj->size || prevtype == PREV_COMMENT)
                         ++rj->size;
@@ -242,7 +240,7 @@ int rj_save(const char* file, struct recordjar* rj)
         struct chain_field* f = r->rec.lh_first;
         while(f)
         {
-            escape(&buf, f->value, ESCAPE_OVERWRITE);
+            escape(&buf, f->value, 0); // overwrite
             fprintf(fp, "%s: %s\n", f->field, buf);
             f = f->chain.le_next;
         }
@@ -312,88 +310,109 @@ void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)
 char* rj_get(const char* key, const char* keyval,
     const char* field, const char* def, struct recordjar* rj)
 {
-    return mod(MOD_THIS|MOD_GET, key, keyval, field, def, rj);
+    return mod(MOD_THIS|MOD_GET, key, keyval, field, def, 0, rj);
 }
 
 char* rj_get_next(const char* key, const char* keyval,
     const char* field, const char* def, struct recordjar* rj)
 {
-    return mod(MOD_NEXT|MOD_GET, key, keyval, field, def, rj);
+    return mod(MOD_NEXT|MOD_GET, key, keyval, field, def, 0, rj);
 }
 
 char* rj_get_prev(const char* key, const char* keyval,
     const char* field, const char* def, struct recordjar* rj)
 {
-    return mod(MOD_PREV|MOD_GET, key, keyval, field, def, rj);
+    return mod(MOD_PREV|MOD_GET, key, keyval, field, def, 0, rj);
 }
 
 int rj_add(const char* key, const char* keyval,
     const char* field, const char* value, struct recordjar* rj)
 {
-    return !mod(MOD_THIS|MOD_ADD, key, keyval, field, value, rj);
+    return !mod(MOD_THIS|MOD_ADD, key, keyval, field, value, 0, rj);
 }
 
 int rj_add_next(const char* key, const char* keyval,
     const char* field, const char* value, struct recordjar* rj)
 {
-    return !mod(MOD_NEXT|MOD_ADD, key, keyval, field, value, rj);
+    return !mod(MOD_NEXT|MOD_ADD, key, keyval, field, value, 0, rj);
 }
 
 int rj_add_prev(const char* key, const char* keyval,
     const char* field, const char* value, struct recordjar* rj)
 {
-    return !mod(MOD_PREV|MOD_ADD, key, keyval, field, value, rj);
+    return !mod(MOD_PREV|MOD_ADD, key, keyval, field, value, 0, rj);
 }
 
 int rj_set(const char* key, const char* keyval,
     const char* field, const char* value, struct recordjar* rj)
 {
-    return !mod(MOD_THIS|MOD_SET, key, keyval, field, value, rj);
+    return !mod(MOD_THIS|MOD_SET, key, keyval, field, value, 0, rj);
 }
 
 int rj_set_next(const char* key, const char* keyval,
     const char* field, const char* value, struct recordjar* rj)
 {
-    return !mod(MOD_NEXT|MOD_SET, key, keyval, field, value, rj);
+    return !mod(MOD_NEXT|MOD_SET, key, keyval, field, value, 0, rj);
 }
 
 int rj_set_prev(const char* key, const char* keyval,
     const char* field, const char* value, struct recordjar* rj)
 {
-    return !mod(MOD_PREV|MOD_SET, key, keyval, field, value, rj);
+    return !mod(MOD_PREV|MOD_SET, key, keyval, field, value, 0, rj);
+}
+
+int rj_app(const char* key, const char* keyval, const char* field,
+    const char* value, const char* delim, struct recordjar* rj)
+{
+    const char* d = delim ? delim : "";
+    return !mod(MOD_THIS|MOD_APP, key, keyval, field, value, d, rj);
+}
+
+int rj_app_next(const char* key, const char* keyval, const char* field,
+    const char* value, const char* delim, struct recordjar* rj)
+{
+    const char* d = delim ? delim : "";
+    return !mod(MOD_NEXT|MOD_APP, key, keyval, field, value, d, rj);
+}
+
+int rj_app_prev(const char* key, const char* keyval, const char* field,
+    const char* value, const char* delim, struct recordjar* rj)
+{
+    const char* d = delim ? delim : "";
+    return !mod(MOD_PREV|MOD_APP, key, keyval, field, value, d, rj);
 }
 
 int rj_del_field(const char* key, const char* keyval,
     const char* field, struct recordjar* rj)
 {
-    return !mod(MOD_THIS|MOD_DEL, key, keyval, field, 0, rj);
+    return !mod(MOD_THIS|MOD_DEL, key, keyval, field, 0, 0, rj);
 }
 
 int rj_del_field_next(const char* key, const char* keyval,
     const char* field, struct recordjar* rj)
 {
-    return !mod(MOD_NEXT|MOD_DEL, key, keyval, field, 0, rj);
+    return !mod(MOD_NEXT|MOD_DEL, key, keyval, field, 0, 0, rj);
 }
 
 int rj_del_field_prev(const char* key, const char* keyval,
     const char* field, struct recordjar* rj)
 {
-    return !mod(MOD_PREV|MOD_DEL, key, keyval, field, 0, rj);
+    return !mod(MOD_PREV|MOD_DEL, key, keyval, field, 0, 0, rj);
 }
 
 int rj_del_record(const char* key, const char* keyval, struct recordjar* rj)
 {
-    return !mod(MOD_THIS|MOD_DEL_REC, key, keyval, 0, 0, rj);
+    return !mod(MOD_THIS|MOD_DEL_REC, key, keyval, 0, 0, 0, rj);
 }
 
 int rj_del_record_next(const char* key, const char* keyval, struct recordjar* rj)
 {
-    return !mod(MOD_NEXT|MOD_DEL_REC, key, keyval, 0, 0, rj);
+    return !mod(MOD_NEXT|MOD_DEL_REC, key, keyval, 0, 0, 0, rj);
 }
 
 int rj_del_record_prev(const char* key, const char* keyval, struct recordjar* rj)
 {
-    return !mod(MOD_PREV|MOD_DEL_REC, key, keyval, 0, 0, rj);
+    return !mod(MOD_PREV|MOD_DEL_REC, key, keyval, 0, 0, 0, rj);
 }
 
 // HELPER
@@ -418,6 +437,9 @@ int trim(char** str)
     return 0;
 }
 
+// mode == 0 - append
+// mode != 0 - overwrite
+
 char* escape_alloc(char** dest, int elen, int mode)
 {
     static int size;
@@ -430,7 +452,7 @@ char* escape_alloc(char** dest, int elen, int mode)
     else
     {
         int len = strlen(*dest);
-        if(mode == ESCAPE_APPEND)
+        if(mode)
         {
             size = len+elen+1;
             *dest = (char*) realloc(*dest, size*sizeof(char));
@@ -491,56 +513,99 @@ int escape_len_rev(const char* str)
     return count;
 }
 
-int escape(char** dest, const char* src, int mode)
+char* escape_copy(char* dest, const char* src)
 {
-    int elen = escape_len(src);
-    char* dptr = escape_alloc(dest, elen, mode);
     while(*src)
     {
         switch(*src)
         {
-            case '\n': *dptr++ = '\\'; *dptr++ = 'n'; break;
-            case '\r': *dptr++ = '\\'; *dptr++ = 'r'; break;
-            case '\t': *dptr++ = '\\'; *dptr++ = 't'; break;
-            case '&':  *dptr++ = '\\'; *dptr++ = '&'; break;
-            case '\\': *dptr++ = '\\'; *dptr++ = '\\'; break;
-            default: *dptr++ = *src;
+            case '\n': *dest++ = '\\'; *dest++ = 'n'; break;
+            case '\r': *dest++ = '\\'; *dest++ = 'r'; break;
+            case '\t': *dest++ = '\\'; *dest++ = 't'; break;
+            case '&':  *dest++ = '\\'; *dest++ = '&'; break;
+            case '\\': *dest++ = '\\'; *dest++ = '\\'; break;
+            default: *dest++ = *src;
         }
         ++src;
     }
-    if(src[-1] == ' ') // continuation
-        *dptr++ = '\\';
-    *dptr = 0;
-    return elen;
+    *dest = 0;
+    return dest;
 }
 
-int escape_rev(char** dest, const char* src, int mode)
+// delim == 0: dest = src
+// delim != 0: dest = dest delim src
+
+int escape(char** dest, const char* src, const char* delim)
 {
-    int elen = escape_len_rev(src);
-    char* dptr = escape_alloc(dest, elen, mode);
+    int len;
+    char* dptr;
+    if(delim)
+    {
+        len = escape_len(src) + escape_len(delim);
+        dptr = escape_alloc(dest, len, 1);
+        dptr = escape_copy(dptr, delim);
+    }
+    else
+    {
+        len = escape_len(src);
+        dptr = escape_alloc(dest, len, 0);
+    }
+    dptr = escape_copy(dptr, src);
+    if(dptr[-1] == ' ') // continuation
+    {
+        dptr[0] = '\\';
+        dptr[1] = '\0';
+    }
+    return len;
+}
+
+char* escape_rev_copy(char* dest, const char* src)
+{
     while(src[0])
     {
         if(src[0] == '\\')
         {
             switch(src[1])
             {
-                case 'n': *dptr++ = '\n'; ++src; break;
-                case 'r': *dptr++ = '\r'; ++src; break;
-                case 't': *dptr++ = '\t'; ++src; break;
-                case '&': *dptr++ = '&';  ++src; break;
-                case '\\': *dptr++ = '\\'; ++src; break;
+                case 'n':  *dest++ = '\n'; ++src; break;
+                case 'r':  *dest++ = '\r'; ++src; break;
+                case 't':  *dest++ = '\t'; ++src; break;
+                case '&':  *dest++ = '&';  ++src; break;
+                case '\\': *dest++ = '\\'; ++src; break;
             }
             ++src;
         }
         else
-            *dptr++ = *src++;
+            *dest++ = *src++;
     }
-    *dptr = 0;
-    return elen;
+    *dest = 0;
+    return dest;
+}
+
+// delim == 0: dest = src
+// delim != 0: dest = dest delim src
+
+int escape_rev(char** dest, const char* src, const char* delim)
+{
+    int len;
+    char* dptr;
+    if(delim)
+    {
+        len = escape_len_rev(src) + escape_len_rev(delim);
+        dptr = escape_alloc(dest, len, 1);
+        dptr = escape_rev_copy(dptr, delim);
+    }
+    else
+    {
+        len = escape_len_rev(src);
+        dptr = escape_alloc(dest, len, 0);
+    }
+    escape_rev_copy(dptr, src);
+    return len;
 }
 
 char* mod(int mode, const char* key, const char* keyval,
-    const char* field, const char* elem, struct recordjar* rj)
+    const char* field, const char* elem1, const char* elem2, struct recordjar* rj)
 {
     int found = 0;
     struct jar* j = (struct jar*) rj->jar;
@@ -598,7 +663,7 @@ notfound:
     switch(mode & MOD_MASK_METHOD)
     {
         case MOD_GET:
-            return (char*) elem;
+            return (char*) elem1;
         case MOD_ADD:
             // add new record
             r = (struct chain_record*) malloc(sizeof(struct chain_record));
@@ -610,7 +675,7 @@ notfound:
             f->field = (char*) malloc((strlen(key)+1)*sizeof(char));
             strcpy(f->field, key);
             f->value = 0;
-            escape_rev(&f->value, keyval, ESCAPE_OVERWRITE);
+            escape(&f->value, keyval, 0); // overwrite
             // add new elem
             goto found;
         default:
@@ -624,7 +689,10 @@ found:
         case MOD_GET:
             return modf->value;
         case MOD_SET:
-            escape_rev(&modf->value, elem, ESCAPE_OVERWRITE);
+            escape(&modf->value, elem1, 0);
+            return f->value;
+        case MOD_APP:
+            escape(&modf->value, elem1, elem2);
             return f->value;
         case MOD_DEL:
             free(modf->field);
@@ -652,7 +720,7 @@ found:
             f->field = (char*) malloc((strlen(field)+1)*sizeof(char));
             strcpy(f->field, field);
             f->value = 0;
-            escape_rev(&f->value, elem, ESCAPE_OVERWRITE);
+            escape(&f->value, elem1, 0); // overwrite
             return f->value;
     }
     return 0;
@@ -723,6 +791,9 @@ int main(int argc, char* argv[])
         printf("%s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
         
         rj_set("field2", "value2", "new field", "other", &rj);
+        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        
+        rj_app("field2", "value2", "new field", "one", " \\ ", &rj);
         printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
         
         rj_del_field("field2", "value2", "new field", &rj);

@@ -86,6 +86,14 @@ following make targets are available
 * if no record matched a no-success value is returned
 * the matching record is memorized
 
+### rj_app, rj_app_next, rj_app_prev
+
+* finds via the given matching criteria the record and appends a delimiter
+  and a value to the value belonging to the requested field
+* if the delimiter is NULL the empty string is used instead
+* if no record matched a no-success value is returned
+* the matching record is memorized
+
 ### rj_add, rj_add_next, rj_add_prev
 
 * finds via the given matching criteria the record and adds the given
