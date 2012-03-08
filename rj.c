@@ -37,18 +37,19 @@
 #define PREV_FIELD   1
 #define PREV_COMMENT 2
 
-#define MOD_MASK_DIR ((1<<3)-1)
+#define MOD_MASK_DIR ((1<<4)-1)
 #define MOD_THIS (1<<0)
 #define MOD_NEXT (1<<1)
 #define MOD_PREV (1<<2)
+#define MOD_ONLY (1<<3)
 
-#define MOD_MASK_METHOD (((1<<9)-1) & ~MOD_MASK_DIR)
-#define MOD_GET (1<<3)
-#define MOD_SET (1<<4)
-#define MOD_APP (1<<5)
-#define MOD_ADD (1<<6)
-#define MOD_DEL (1<<7)
-#define MOD_DEL_REC (1<<8)
+#define MOD_MASK_METHOD (((1<<10)-1) & ~MOD_MASK_DIR)
+#define MOD_GET (1<<4)
+#define MOD_SET (1<<5)
+#define MOD_APP (1<<6)
+#define MOD_ADD (1<<7)
+#define MOD_DEL (1<<8)
+#define MOD_DEL_REC (1<<9)
 
 int trim(char** str);
 int escape(char** dest, const char* src, const char* delim);
@@ -307,113 +308,77 @@ void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)
     }
 }
 
-char* rj_get(const char* key, const char* keyval,
-    const char* field, const char* def, struct recordjar* rj)
-{
-    return mod(MOD_THIS|MOD_GET, key, keyval, field, def, 0, rj);
-}
+#define MET_GET(Name, Mode) \
+    char* rj_##Name(const char* key, const char* keyval, \
+        const char* field, const char* def, struct recordjar* rj) \
+    { \
+        return mod(MOD_##Mode|MOD_GET, key, keyval, field, def, 0, rj); \
+    }
 
-char* rj_get_next(const char* key, const char* keyval,
-    const char* field, const char* def, struct recordjar* rj)
-{
-    return mod(MOD_NEXT|MOD_GET, key, keyval, field, def, 0, rj);
-}
+MET_GET(get, THIS)
+MET_GET(get_next, NEXT)
+MET_GET(get_prev, PREV)
+MET_GET(get_only, ONLY)
 
-char* rj_get_prev(const char* key, const char* keyval,
-    const char* field, const char* def, struct recordjar* rj)
-{
-    return mod(MOD_PREV|MOD_GET, key, keyval, field, def, 0, rj);
-}
+#define MET_ADD(Name, Mode) \
+    int rj_##Name(const char* key, const char* keyval, \
+        const char* field, const char* value, struct recordjar* rj) \
+    { \
+        return !mod(MOD_##Mode|MOD_ADD, key, keyval, field, value, 0, rj); \
+    }
 
-int rj_add(const char* key, const char* keyval,
-    const char* field, const char* value, struct recordjar* rj)
-{
-    return !mod(MOD_THIS|MOD_ADD, key, keyval, field, value, 0, rj);
-}
+MET_ADD(add, THIS)
+MET_ADD(add_next, NEXT)
+MET_ADD(add_prev, PREV)
+MET_ADD(add_only, ONLY)
 
-int rj_add_next(const char* key, const char* keyval,
-    const char* field, const char* value, struct recordjar* rj)
-{
-    return !mod(MOD_NEXT|MOD_ADD, key, keyval, field, value, 0, rj);
-}
+#define MET_SET(Name, Mode) \
+    int rj_##Name(const char* key, const char* keyval, \
+        const char* field, const char* value, struct recordjar* rj) \
+    { \
+        return !mod(MOD_##Mode|MOD_SET, key, keyval, field, value, 0, rj); \
+    }
 
-int rj_add_prev(const char* key, const char* keyval,
-    const char* field, const char* value, struct recordjar* rj)
-{
-    return !mod(MOD_PREV|MOD_ADD, key, keyval, field, value, 0, rj);
-}
+MET_SET(set, THIS)
+MET_SET(set_next, NEXT)
+MET_SET(set_prev, PREV)
+MET_SET(set_only, ONLY)
 
-int rj_set(const char* key, const char* keyval,
-    const char* field, const char* value, struct recordjar* rj)
-{
-    return !mod(MOD_THIS|MOD_SET, key, keyval, field, value, 0, rj);
-}
+#define MET_APP(Name, Mode) \
+    int rj_##Name(const char* key, const char* keyval, const char* field, \
+        const char* value, const char* delim, struct recordjar* rj) \
+    { \
+        const char* d = delim ? delim : ""; \
+        return !mod(MOD_##Mode|MOD_APP, key, keyval, field, value, d, rj); \
+    }
 
-int rj_set_next(const char* key, const char* keyval,
-    const char* field, const char* value, struct recordjar* rj)
-{
-    return !mod(MOD_NEXT|MOD_SET, key, keyval, field, value, 0, rj);
-}
+MET_APP(app, THIS)
+MET_APP(app_next, NEXT)
+MET_APP(app_prev, PREV)
+MET_APP(app_only, ONLY)
 
-int rj_set_prev(const char* key, const char* keyval,
-    const char* field, const char* value, struct recordjar* rj)
-{
-    return !mod(MOD_PREV|MOD_SET, key, keyval, field, value, 0, rj);
-}
+#define MET_DEL_FIELD(Name, Mode) \
+    int rj_##Name(const char* key, const char* keyval, \
+        const char* field, struct recordjar* rj) \
+    { \
+        return !mod(MOD_##Mode|MOD_DEL, key, keyval, field, 0, 0, rj); \
+    }
 
-int rj_app(const char* key, const char* keyval, const char* field,
-    const char* value, const char* delim, struct recordjar* rj)
-{
-    const char* d = delim ? delim : "";
-    return !mod(MOD_THIS|MOD_APP, key, keyval, field, value, d, rj);
-}
+MET_DEL_FIELD(del_field, THIS)
+MET_DEL_FIELD(del_field_next, NEXT)
+MET_DEL_FIELD(del_field_prev, PREV)
+MET_DEL_FIELD(del_field_only, ONLY)
 
-int rj_app_next(const char* key, const char* keyval, const char* field,
-    const char* value, const char* delim, struct recordjar* rj)
-{
-    const char* d = delim ? delim : "";
-    return !mod(MOD_NEXT|MOD_APP, key, keyval, field, value, d, rj);
-}
+#define MET_DEL_RECORD(Name, Mode) \
+    int rj_##Name(const char* key, const char* keyval, struct recordjar* rj) \
+    { \
+        return !mod(MOD_##Mode|MOD_DEL_REC, key, keyval, 0, 0, 0, rj); \
+    }
 
-int rj_app_prev(const char* key, const char* keyval, const char* field,
-    const char* value, const char* delim, struct recordjar* rj)
-{
-    const char* d = delim ? delim : "";
-    return !mod(MOD_PREV|MOD_APP, key, keyval, field, value, d, rj);
-}
-
-int rj_del_field(const char* key, const char* keyval,
-    const char* field, struct recordjar* rj)
-{
-    return !mod(MOD_THIS|MOD_DEL, key, keyval, field, 0, 0, rj);
-}
-
-int rj_del_field_next(const char* key, const char* keyval,
-    const char* field, struct recordjar* rj)
-{
-    return !mod(MOD_NEXT|MOD_DEL, key, keyval, field, 0, 0, rj);
-}
-
-int rj_del_field_prev(const char* key, const char* keyval,
-    const char* field, struct recordjar* rj)
-{
-    return !mod(MOD_PREV|MOD_DEL, key, keyval, field, 0, 0, rj);
-}
-
-int rj_del_record(const char* key, const char* keyval, struct recordjar* rj)
-{
-    return !mod(MOD_THIS|MOD_DEL_REC, key, keyval, 0, 0, 0, rj);
-}
-
-int rj_del_record_next(const char* key, const char* keyval, struct recordjar* rj)
-{
-    return !mod(MOD_NEXT|MOD_DEL_REC, key, keyval, 0, 0, 0, rj);
-}
-
-int rj_del_record_prev(const char* key, const char* keyval, struct recordjar* rj)
-{
-    return !mod(MOD_PREV|MOD_DEL_REC, key, keyval, 0, 0, 0, rj);
-}
+MET_DEL_RECORD(del_record, THIS)
+MET_DEL_RECORD(del_record_next, NEXT)
+MET_DEL_RECORD(del_record_prev, PREV)
+MET_DEL_RECORD(del_record_only, ONLY)
 
 // HELPER
 
@@ -610,7 +575,7 @@ char* mod(int mode, const char* key, const char* keyval,
     int found = 0;
     struct jar* j = (struct jar*) rj->jar;
     struct chain_record* r = (struct chain_record*) rj->rec;
-    struct chain_field *f, *modf;
+    struct chain_field *f = 0, *modf;
     
     if(!r)
         goto notfound;
@@ -628,6 +593,10 @@ char* mod(int mode, const char* key, const char* keyval,
                 r = r->chain.cqe_prev;
                 if(r == (void*)j)
                     r = j->cqh_last;
+                break;
+            case MOD_ONLY:
+                if(f)
+                    goto notfound;
                 break;
         }
         if(!(mode & MOD_THIS) && r == rj->rec)
@@ -674,8 +643,8 @@ notfound:
             LIST_INSERT_HEAD(&r->rec, f, chain);
             f->field = (char*) malloc((strlen(key)+1)*sizeof(char));
             strcpy(f->field, key);
-            f->value = 0;
-            escape(&f->value, keyval, 0); // overwrite
+            f->value = (char*) malloc((strlen(keyval)+1)*sizeof(char));
+            strcpy(f->value, keyval);
             // add new elem
             goto found;
         default:
@@ -689,11 +658,18 @@ found:
         case MOD_GET:
             return modf->value;
         case MOD_SET:
-            escape(&modf->value, elem1, 0);
+            modf->value = (char*) malloc((strlen(elem1)+1)*sizeof(char));
+            strcpy(modf->value, elem1);
             return f->value;
         case MOD_APP:
-            escape(&modf->value, elem1, elem2);
+        {
+            int len = strlen(modf->value);
+            int dlen = strlen(elem2);
+            modf->value = (char*) realloc(modf->value, (len+dlen+strlen(elem1)+1)*sizeof(char));
+            strcpy(modf->value+len, elem2);
+            strcpy(modf->value+len+dlen, elem1);
             return f->value;
+        }
         case MOD_DEL:
             free(modf->field);
             free(modf->value);
@@ -719,8 +695,8 @@ found:
             LIST_INSERT_HEAD(&r->rec, f, chain);
             f->field = (char*) malloc((strlen(field)+1)*sizeof(char));
             strcpy(f->field, field);
-            f->value = 0;
-            escape(&f->value, elem1, 0); // overwrite
+            f->value = (char*) malloc((strlen(elem1)+1)*sizeof(char));
+            strcpy(f->value, elem1);
             return f->value;
     }
     return 0;
@@ -771,35 +747,36 @@ int main(int argc, char* argv[])
     
     if(test)
     {
-        rj_save("test.test", &rj) ? printf("not saved\n") : printf("saved\n");
+        printf("value1_r1: %s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("value1_r1: %s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("value1_r2: %s\n", rj_get_next("same", "bla", "field1", "not found", &rj));
+        printf("value1_r2: %s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("value1_r1: %s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
+        printf("value1_r1: %s\n", rj_get("same", "bla", "field1", "not found", &rj));
+        printf("value1_r2: %s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
+        printf("not found: %s\n", rj_get_only("field2", "value2", "field1", "not found", &rj));
         
-        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-        printf("%s\n", rj_get_next("same", "bla", "field1", "not found", &rj));
-        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-        printf("%s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
-        printf("%s\n", rj_get("same", "bla", "field1", "not found", &rj));
-        printf("%s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
-        
-        printf("%s\n", rj_get("nothere", "bla", "field1", "not found", &rj));
-        printf("%s\n", rj_get("same", "nothere", "field1", "not found", &rj));
-        printf("%s\n", rj_get("same", "bla", "nothere", "not found", &rj));
+        printf("not found: %s\n", rj_get("nothere", "bla", "field1", "not found", &rj));
+        printf("not found: %s\n", rj_get("same", "nothere", "field1", "not found", &rj));
+        printf("not found: %s\n", rj_get("same", "bla", "nothere", "not found", &rj));
         
         rj_add("field2", "value2", "new field", "new value", &rj);
-        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        printf("new value: %s\n", rj_get("field2", "value2", "new field", "not found", &rj));
         rj_add("notexisting", "keyval", "new one", "new value", &rj);
-        printf("%s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
+        printf("keyval: %s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
         
         rj_set("field2", "value2", "new field", "other", &rj);
-        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        printf("other: %s\n", rj_get("field2", "value2", "new field", "not found", &rj));
         
         rj_app("field2", "value2", "new field", "one", " \\ ", &rj);
-        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        printf("other \\ one: %s\n", rj_get("field2", "value2", "new field", "not found", &rj));
         
-        rj_del_field("field2", "value2", "new field", &rj);
-        printf("%s\n", rj_get("field2", "value2", "new field", "not found", &rj));
+        rj_del_field("field2", "value2", "field1", &rj);
+        printf("not found: %s\n", rj_get("field2", "value2", "field1", "not found", &rj));
         rj_del_record("new one", "new value", &rj);
-        printf("%s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
+        printf("not found: %s\n", rj_get("new one", "new value", "notexisting", "not found", &rj));
+        
+        rj_save("test.test", &rj) ? printf("not saved\n") : printf("saved\n");
     }
     
     rj_free(&rj);

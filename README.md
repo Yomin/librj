@@ -24,11 +24,12 @@ At future invocations of these methods this record is searched first.
 Retrieving multiple values from one record has therefore complexity O(1) in
 means of record traversal.
 If the record matching critera are not met the following records are searched.
+This is not true if the 'only' methods are used.
 The search ends if the starting from record is reached again.
 
 Multiple invocations of the mentioned methods with matching critera contained
 by multiple records would only operate on the same record. Therefore for every
-of these methods next and previous methods are available which skips the
+of these methods 'next' and 'prev' methods are available which skips the
 current matched record and proceed with the next/previuous. If some unique
 matching criteria is used the normal methods are sufficient.
 
@@ -72,21 +73,21 @@ following make targets are available
 * an also passed info variable contains knowledge about the current elements
   position
 
-### rj_get, rj_get_next, rj_get_prev
+### rj_get, rj_get_next, rj_get_prev, rj_get_only
 
 * finds via the given matching criteria the record and returns the value
   belonging to the requested field
 * if no record matched the specified default value is returned
 * the matching record is memorized
 
-### rj_set, rj_set_next, rj_set_prev
+### rj_set, rj_set_next, rj_set_prev, rj_set_only
 
 * finds via the given matching criteria the record and replaces the value
   belonging to the requested field
 * if no record matched a no-success value is returned
 * the matching record is memorized
 
-### rj_app, rj_app_next, rj_app_prev
+### rj_app, rj_app_next, rj_app_prev, rj_app_only
 
 * finds via the given matching criteria the record and appends a delimiter
   and a value to the value belonging to the requested field
@@ -94,7 +95,7 @@ following make targets are available
 * if no record matched a no-success value is returned
 * the matching record is memorized
 
-### rj_add, rj_add_next, rj_add_prev
+### rj_add, rj_add_next, rj_add_prev, rj_add_only
 
 * finds via the given matching criteria the record and adds the given
   field-value pair to the record
@@ -102,7 +103,7 @@ following make targets are available
   the key pair and the requested pair
 * the matching or created record is memorized
 
-### rj_del_field, rj_del_field_next, rj_del_field_prev
+### rj_del_field, rj_del_field_next, rj_del_field_prev, rj_del_field_only
 
 * finds via the given matching criteria the record and removes the field-value
   pair from the record
@@ -111,7 +112,7 @@ following make targets are available
   removed too
 * the matching record is memorized or set to the first of the left records
 
-### rj_del_record, rj_del_record_next, rj_del_record_prev
+### rj_del_record, rj_del_record_next, rj_del_record_prev, rj_del_record_only
 
 * finds via the given matching criteria the record and removes the this record
 * if no record matched a no-success value is returned

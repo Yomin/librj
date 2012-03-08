@@ -45,82 +45,64 @@ void rj_free(struct recordjar* rj);
 
 void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj);
 
-char* rj_get(
-    const char* key, const char* keyval,
-    const char* field, const char* def,
-    struct recordjar* rj);
+#define RJ_GET(Name) \
+    char* rj_##Name( \
+        const char* key, const char* keyval, \
+        const char* field, const char* def, \
+        struct recordjar* rj);
 
-char* rj_get_next(
-    const char* key, const char* keyval,
-    const char* field, const char* def,
-    struct recordjar* rj);
+RJ_GET(get)
+RJ_GET(get_next)
+RJ_GET(get_prev)
+RJ_GET(get_only)
 
-char* rj_get_prev(
-    const char* key, const char* keyval,
-    const char* field, const char* def,
-    struct recordjar* rj);
+#define RJ_ADD(Name) \
+    int rj_##Name( \
+        const char* key, const char* keyval, \
+        const char* field, const char* value, \
+        struct recordjar* rj);
 
-int rj_add(
-    const char* key, const char* keyval,
-    const char* field, const char* value,
-    struct recordjar* rj);
+RJ_ADD(add)
+RJ_ADD(add_next)
+RJ_ADD(add_prev)
+RJ_ADD(add_only)
 
-int rj_add_next(
-    const char* key, const char* keyval,
-    const char* field, const char* value,
-    struct recordjar* rj);
+#define RJ_SET(Name) \
+    int rj_##Name( \
+        const char* key, const char* keyval, \
+        const char* field, const char* value, \
+        struct recordjar* rj);
 
-int rj_add_prev(
-    const char* key, const char* keyval,
-    const char* field, const char* value,
-    struct recordjar* rj);
+RJ_SET(set)
+RJ_SET(set_next)
+RJ_SET(set_prev)
+RJ_SET(set_only)
 
-int rj_set(
-    const char* key, const char* keyval,
-    const char* field, const char* value,
-    struct recordjar* rj);
+#define RJ_APP(Name) \
+    int rj_##Name( \
+        const char* key, const char* keyval, \
+        const char* field, const char* value, const char* delim, \
+        struct recordjar* rj);
 
-int rj_set_next(
-    const char* key, const char* keyval,
-    const char* field, const char* value,
-    struct recordjar* rj);
+RJ_APP(app)
+RJ_APP(app_next)
+RJ_APP(app_prev)
+RJ_APP(app_only)
 
-int rj_set_prev(
-    const char* key, const char* keyval,
-    const char* field, const char* value,
-    struct recordjar* rj);
+#define RJ_DEL_RECORD(Name) \
+    int rj_##Name(const char* key, const char* keyval, struct recordjar* rj);
 
-int rj_app(
-    const char* key, const char* keyval,
-    const char* field, const char* value, const char* delim,
-    struct recordjar* rj);
+RJ_DEL_RECORD(del_record)
+RJ_DEL_RECORD(del_record_next)
+RJ_DEL_RECORD(del_record_prev)
+RJ_DEL_RECORD(del_record_only)
 
-int rj_app_next(
-    const char* key, const char* keyval,
-    const char* field, const char* value, const char* delim,
-    struct recordjar* rj);
+#define RJ_DEL_FIELD(Name) \
+    int rj_##Name(const char* key, const char* keyval, const char* field, struct recordjar* rj);
 
-int rj_app_prev(
-    const char* key, const char* keyval,
-    const char* field, const char* value, const char* delim,
-    struct recordjar* rj);
-
-int rj_del_record(
-    const char* key, const char* keyval, struct recordjar* rj);
-
-int rj_del_record_next(
-    const char* key, const char* keyval, struct recordjar* rj);
-
-int rj_del_record_prev(
-    const char* key, const char* keyval, struct recordjar* rj);
-
-int rj_del_field(
-    const char* key, const char* keyval, const char* field, struct recordjar* rj);
-
-int rj_del_field_next(
-    const char* key, const char* keyval, const char* field, struct recordjar* rj);
-
-int rj_del_field_prev(
-    const char* key, const char* keyval, const char* field, struct recordjar* rj);
+RJ_DEL_FIELD(del_field)
+RJ_DEL_FIELD(del_field_next)
+RJ_DEL_FIELD(del_field_prev)
+RJ_DEL_FIELD(del_field_only)
 
 #endif
