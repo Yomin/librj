@@ -614,7 +614,7 @@ char* mod(int mode, const char* key, const char* keyval,
                     goto found;
                 found = 2;
             }
-            else if(found != 1 && (!key || !strcmp(f->field, key)) &&
+            if(found != 1 && (!key || !strcmp(f->field, key)) &&
                 (!keyval || !strcmp(f->value, keyval)))
             {
                 if(found || (mode & MOD_DEL_REC))
