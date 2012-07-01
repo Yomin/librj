@@ -16,6 +16,7 @@ field4:continuation value     \
  with\nescape\\characters   \
 same: bla
 field1: value1_r2
+asd:qwe:123
 %%
 r3: v3
 %% last line comment

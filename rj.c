@@ -175,8 +175,8 @@ int rj_load(const char* file, struct recordjar* rj)
         else
         {
             DEBUG(printf("field\n"));
-            char* field = strtok(line, ":");
-            char* value = strtok(0, ":");
+            char* value;
+            char* field = strtok_r(line, ":", &value);
             
             if(field[0] == ':' || !value)
                 DEBUG(printf("  error no field name\n"));
