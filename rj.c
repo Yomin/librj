@@ -599,7 +599,7 @@ char* mod(int mode, const char* key, const char* keyval,
                     goto notfound;
                 break;
         }
-        if(!(mode & MOD_THIS) && r == rj->rec)
+        if(!(mode & MOD_THIS) && !(mode & MOD_ONLY) && r == rj->rec)
             goto notfound;
         if(mode & MOD_THIS)
             mode = (mode & ~MOD_THIS) | MOD_NEXT;
@@ -625,6 +625,7 @@ char* mod(int mode, const char* key, const char* keyval,
                 goto found;
             f = f->chain.le_next;
         }
+        f = r->rec.lh_first; // stop of *_only
         found = 0;
     }
     
@@ -754,6 +755,7 @@ int main(int argc, char* argv[])
         printf("value1_r1: %s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
         printf("value1_r1: %s\n", rj_get("same", "bla", "field1", "not found", &rj));
         printf("value1_r2: %s\n", rj_get_prev("same", "bla", "field1", "not found", &rj));
+        printf("value1_r1: %s\n", rj_get_only("same", "bla", "field1", "not found", &rj));
         printf("not found: %s\n", rj_get_only("field2", "value2", "field1", "not found", &rj));
         
         printf("not found: %s\n", rj_get("nothere", "bla", "field1", "not found", &rj));
