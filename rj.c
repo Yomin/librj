@@ -288,11 +288,14 @@ void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)
     struct jar* j = (struct jar*) rj->jar;
     struct chain_record* r = j->cqh_first;
     int rec_first = 1;
+    void* tmp = rj->rec;
+    
     while(1)
     {
         int fld_first = 1;
         int rec_last = r->chain.cqe_next == (void*)j;
         struct chain_field* f = r->rec.lh_first;
+        rj->rec = r;
         while(f)
         {
             int fld_last = f->chain.le_next == 0;
@@ -306,6 +309,7 @@ void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)
         if(r == (void*)j)
             break;
     }
+    rj->rec = tmp;
 }
 
 #define MET_GET(Name, Mode) \
