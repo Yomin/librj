@@ -116,4 +116,10 @@ following make targets are available
 
 * finds via the given matching criteria the record and removes the this record
 * if no record matched a no-success value is returned
-* the memorized mathing record is set to the first of the left records
+* the memorized matching record is set to the first of the left records
+
+### rj_next
+
+* returns successively all field/key sets from the current record
+* the current field is memorized with the internal variable 'field'
+* every time the matching record is memorized the 'field' variable is reset

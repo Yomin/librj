@@ -36,7 +36,7 @@
 struct recordjar
 {
     int size;
-    void *jar, *rec;
+    void *jar, *rec, *field;
 };
 
 typedef void rj_mapfold_func(int info, char** field, char** value,
@@ -49,6 +49,8 @@ void rj_free(struct recordjar* rj);
 const char *rj_strerror(int error);
 
 void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj);
+
+void rj_next(char** field, char** value, struct recordjar* rj);
 
 #define RJ_GET(Name) \
     char* rj_##Name( \

@@ -92,6 +92,7 @@ int rj_load(const char* file, struct recordjar* rj)
     LIST_INIT(r);
     
     rj->size = 0;
+    rj->field = 0;
     
     char* line = 0;
     size_t size;
@@ -280,9 +281,7 @@ void rj_free(struct recordjar* rj)
         free(cr);
     }
     free(j);
-    rj->jar = 0;
-    rj->rec = 0;
-    rj->size = 0;
+    memset(rj, 0, sizeof(struct recordjar));
 }
 
 const char* rj_strerror(int error)
@@ -322,6 +321,28 @@ void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)
             break;
     }
     rj->rec = tmp;
+}
+
+void rj_next(char** field, char** value, struct recordjar* rj)
+{
+    struct chain_record* cr = rj->rec;
+    struct chain_field* cf = rj->field;
+    
+    if(!cf)
+        cf = rj->field = cr->rec.lh_first;
+    else
+        cf = rj->field = cf->chain.le_next;
+    
+    if(cf)
+    {
+        *field = cf->field;
+        *value = cf->value;
+    }
+    else
+    {
+        *field = 0;
+        *value = 0;
+    }
 }
 
 #define MET_GET(Name, Mode) \
@@ -670,6 +691,7 @@ notfound:
     
 found:
     rj->rec = r;
+    rj->field = 0;
     switch(mode & MOD_MASK_METHOD)
     {
         case MOD_GET:
