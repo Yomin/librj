@@ -623,7 +623,7 @@ char* mod(int mode, const char* key, const char* keyval,
         f = r->rec.lh_first;
         while(f)
         {
-            if(found != 2 && field && !strcmp(f->field, field))
+            if(found != 2 && (!field || !strcmp(f->field, field)))
             {
                 modf = f;
                 if(found)
