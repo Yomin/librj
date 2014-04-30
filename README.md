@@ -47,7 +47,7 @@ following make targets are available
 * debug: compile into object with debug symbols and pack with ar to static lib
 * test: compile with main and create test executable
 
-## Methods
+## Standard Methods
 
 ### rj_load
 
@@ -123,3 +123,8 @@ following make targets are available
 * returns successively all field/key sets from the current record
 * the current field is memorized with the internal variable 'field'
 * every time the matching record is memorized the 'field' variable is reset
+
+## Config Methods
+
+The config methods are simplified versions of the standard methods
+where as record key always 'section' is used.
