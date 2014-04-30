@@ -1,25 +1,32 @@
-.PHONY: all, debug, lib, debuglib, clean, touch
+.PHONY: all, debug, clean, test, touch
 
-all: debug =
-all: touch librj.a
+CFLAGS := $(CFLAGS) -Wall -pedantic -std=c99
+SOURCES = $(shell find . -maxdepth 1 -name "*.c")
+OBJECTS = $(SOURCES:%.c=%.o)
+NAME = rj
 
-debug: debug = -ggdb
-debug: touch librj.a
+all: debug = no
+all: CFLAGS := $(CFLAGS) -D NDEBUG
+all: touch lib$(NAME).a
+
+debug: debug = yes
+debug: CFLAGS := $(CFLAGS) -ggdb
+debug: touch lib$(NAME).a
 
 clean:
 	find . -maxdepth 1 ! -type d \( -perm -111 -or -name "*\.a" -or -name "*\.o" -or -name "*\.test" \) -exec rm {} \;
 
 
-rj.o: rj.c
-	gcc -Wall -c $(debug) -D NDEBUG -o $@ $<
+%.o: %.c
+	gcc -c $(CFLAGS) -o $@ $<
 
-librj.a: rj.o
-	ar rcs $@ $<
+lib$(NAME).a: $(OBJECTS)
+	ar rcs $@ $(OBJECTS)
 
-test: rj.c
-	gcc -Wall -ggdb -o $@ $<
+test: $(NAME).c
+	gcc $(CFLAGS) -ggdb -D TEST -o $@ $<
 
 
 touch:
-	$(shell [ -f debug -a -z "$(debug)" ] && { touch rj.c; rm debug; })
-	$(shell [ ! -f debug -a -n "$(debug)" ] && { touch rj.c; touch debug; })
+	$(shell [ -f debug -a "$(debug)" = "no" ] && { touch *.c; rm debug; })
+	$(shell [ ! -f debug -a "$(debug)" = "yes" ] && { touch *.c; touch debug; })

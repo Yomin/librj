@@ -707,9 +707,9 @@ found:
     return 0;
 }
 
-// DEBUG
+// TEST
 
-#ifndef NDEBUG
+#ifdef TEST
 
 struct show_state
 {
