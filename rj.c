@@ -1,7 +1,7 @@
 /*
  * This source file is part of the librj c library.
  *
- * Copyright (c) 2012 Martin Rödel aka Yomin
+ * Copyright (c) 2012,2014 Martin Rödel aka Yomin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,14 @@
  * THE SOFTWARE.
  */
 
+#define _GNU_SOURCE
+
 #include "rj.h"
 #include <sys/queue.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #ifndef NDEBUG
 #   define DEBUG(x) x
@@ -76,7 +79,7 @@ int rj_load(const char* file, struct recordjar* rj)
 {
     FILE* fp = fopen(file, "r");
     if(!fp)
-        return -1;
+        return errno;
     
     struct jar* j = (struct jar*) malloc(sizeof(struct jar));
     rj->jar = j;
@@ -94,7 +97,7 @@ int rj_load(const char* file, struct recordjar* rj)
     size_t size;
     int count, prevtype = 0, encoding = 0;
     struct chain_field* f;
-    struct chain_record* prevrec = 0;
+    
     while((count = getline(&line, &size, fp)) != -1)
     {
         if(!encoding)
@@ -102,7 +105,7 @@ int rj_load(const char* file, struct recordjar* rj)
             encoding = 1;
             if(count >= 2 && line[0] == '%' && line[1] == '%')
             {
-                DEBUG(printf("check encoding\n"));
+                DEBUG(printf("[RJ] check encoding\n"));
                 char* enc = line+2;
                 char* field = strtok(enc, ":");
                 char* value = strtok(0, ":");
@@ -123,13 +126,13 @@ int rj_load(const char* file, struct recordjar* rj)
                             else
                             {
                                 DEBUG(printf("  no supported encoding signature\n"));
-                                return -3;
+                                return RJ_ERROR_ENCODING_UNSUPPORTED;
                             }
                         }
                         else
                         {
                             DEBUG(printf("  invalid encoding signature\n"));
-                            return -2;
+                            return RJ_ERROR_ENCODING_INVALID;
                         }
                     }
                     else
@@ -139,10 +142,10 @@ int rj_load(const char* file, struct recordjar* rj)
         }
         
         if(count == 1 && line[0] == '\n')
-            DEBUG(printf("ignored newline\n"));
+            DEBUG(printf("[RJ] ignored newline\n"));
         else if(count >= 1 && (line[0] == ' ' || line[0] == '\t'))
         {
-            DEBUG(printf("fold line\n"));
+            DEBUG(printf("[RJ] fold line\n"));
             if(prevtype == PREV_FIELD)
             {
                 char* value = line;
@@ -160,11 +163,10 @@ int rj_load(const char* file, struct recordjar* rj)
         }
         else if(count >= 2 && line[0] == '%' && line[1] == '%')
         {
-            DEBUG(printf("comment\n"));
+            DEBUG(printf("[RJ] comment\n"));
             if(prevtype == PREV_FIELD)
             {
                 DEBUG(printf("  new record\n"));
-                prevrec = cr;
                 cr = (struct chain_record*) malloc(sizeof(struct chain_record));
                 CIRCLEQ_INSERT_TAIL(j, cr, chain);
                 r = &cr->rec;
@@ -174,7 +176,7 @@ int rj_load(const char* file, struct recordjar* rj)
         }
         else
         {
-            DEBUG(printf("field\n"));
+            DEBUG(printf("[RJ] field\n"));
             char* value;
             char* field = strtok_r(line, ":", &value);
             
@@ -213,7 +215,7 @@ int rj_load(const char* file, struct recordjar* rj)
     
     if(prevtype == PREV_COMMENT)
     {
-        DEBUG(printf("remove empty last record\n"));
+        DEBUG(printf("[RJ] remove empty last record\n"));
         struct chain_record* cr = j->cqh_last;
         CIRCLEQ_REMOVE(j, cr, chain);
         free(cr);
@@ -222,14 +224,14 @@ int rj_load(const char* file, struct recordjar* rj)
     if(line)
         free(line);
     fclose(fp);
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int rj_save(const char* file, struct recordjar* rj)
 {
     FILE* fp = fopen(file, "w");
     if(!fp)
-        return -1;
+        return errno;
     
     fprintf(fp, "%%%%encoding: US-ASCII\n");
     
@@ -255,7 +257,7 @@ int rj_save(const char* file, struct recordjar* rj)
     if(buf)
         free(buf);
     fclose(fp);
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void rj_free(struct recordjar* rj)
@@ -281,6 +283,16 @@ void rj_free(struct recordjar* rj)
     rj->jar = 0;
     rj->rec = 0;
     rj->size = 0;
+}
+
+const char* rj_strerror(int error)
+{
+    switch(error)
+    {
+    case RJ_ERROR_ENCODING_INVALID:     return "encoding invalid";
+    case RJ_ERROR_ENCODING_UNSUPPORTED: return "encoding unsupported";
+    default:                            return strerror(error);
+    }
 }
 
 void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)

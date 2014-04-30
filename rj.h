@@ -1,7 +1,7 @@
 /*
  * This source file is part of the librj c library.
  *
- * Copyright (c) 2012 Martin Rödel aka Yomin
+ * Copyright (c) 2012,2014 Martin Rödel aka Yomin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,9 @@
 #define RJ_INFO_FLD_FIRST 4
 #define RJ_INFO_FLD_LAST  8
 
+#define RJ_ERROR_ENCODING_INVALID       -1
+#define RJ_ERROR_ENCODING_UNSUPPORTED   -2
+
 struct recordjar
 {
     int size;
@@ -42,6 +45,8 @@ typedef void rj_mapfold_func(int info, char** field, char** value,
 int  rj_load(const char* file, struct recordjar* rj);
 int  rj_save(const char* file, struct recordjar* rj);
 void rj_free(struct recordjar* rj);
+
+const char *rj_strerror(int error);
 
 void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj);
 
