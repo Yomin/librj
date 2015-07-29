@@ -62,10 +62,10 @@ char* mod(int mode, const char* key, const char* keyval,
 
 struct chain_field
 {
-    LIST_ENTRY(chain_field) chain;
+    TAILQ_ENTRY(chain_field) chain;
     char *field, *value;
 };
-LIST_HEAD(record, chain_field);
+TAILQ_HEAD(record, chain_field);
 
 struct chain_record
 {
@@ -89,7 +89,7 @@ int rj_load(const char* file, struct recordjar* rj)
     CIRCLEQ_INSERT_TAIL(j, cr, chain);
     struct record* r = &cr->rec;
     rj->rec = cr;
-    LIST_INIT(r);
+    TAILQ_INIT(r);
     
     rj->size = 0;
     rj->field = 0;
@@ -171,7 +171,7 @@ int rj_load(const char* file, struct recordjar* rj)
                 cr = (struct chain_record*) malloc(sizeof(struct chain_record));
                 CIRCLEQ_INSERT_TAIL(j, cr, chain);
                 r = &cr->rec;
-                LIST_INIT(r);
+                TAILQ_INIT(r);
             }
             prevtype = PREV_COMMENT;
         }
@@ -199,7 +199,7 @@ int rj_load(const char* file, struct recordjar* rj)
                     }
                     
                     f = (struct chain_field*) malloc(sizeof(struct chain_field));
-                    LIST_INSERT_HEAD(r, f, chain);
+                    TAILQ_INSERT_TAIL(r, f, chain);
                     f->field = (char*) malloc((fieldlen+1)*sizeof(char));
                     strcpy(f->field, field);
                     f->value = 0;
@@ -241,12 +241,12 @@ int rj_save(const char* file, struct recordjar* rj)
     struct chain_record* r = j->cqh_first;
     while(1)
     {
-        struct chain_field* f = r->rec.lh_first;
+        struct chain_field* f = r->rec.tqh_first;
         while(f)
         {
             escape(&buf, f->value, 0); // overwrite
             fprintf(fp, "%s: %s\n", f->field, buf);
-            f = f->chain.le_next;
+            f = f->chain.tqe_next;
         }
         r = r->chain.cqe_next;
         if(r == (void*)j)
@@ -268,14 +268,14 @@ void rj_free(struct recordjar* rj)
     {
         struct chain_record* cr = j->cqh_first;
         struct record* r = &cr->rec;
-        struct chain_field* cf = r->lh_first;
+        struct chain_field* cf = r->tqh_first;
         while(cf)
         {
             free(cf->field);
             free(cf->value);
-            LIST_REMOVE(cf, chain);
+            TAILQ_REMOVE(r, cf, chain);
             free(cf);
-            cf = r->lh_first;
+            cf = r->tqh_first;
         }
         CIRCLEQ_REMOVE(j, cr, chain);
         free(cr);
@@ -305,14 +305,14 @@ void rj_mapfold(rj_mapfold_func* func, void* state, struct recordjar* rj)
     {
         int fld_first = 1;
         int rec_last = r->chain.cqe_next == (void*)j;
-        struct chain_field* f = r->rec.lh_first;
+        struct chain_field* f = r->rec.tqh_first;
         rj->rec = r;
         while(f)
         {
-            int fld_last = f->chain.le_next == 0;
+            int fld_last = f->chain.tqe_next == 0;
             int info = rec_first | rec_last<<1 | fld_first<<2 | fld_last<<3;
             func(info, &f->field, &f->value, state, rj);
-            f = f->chain.le_next;
+            f = f->chain.tqe_next;
             fld_first = 0;
         }
         r = r->chain.cqe_next;
@@ -329,9 +329,9 @@ void rj_next(char** field, char** value, struct recordjar* rj)
     struct chain_field* cf = rj->field;
     
     if(!cf)
-        cf = rj->field = cr->rec.lh_first;
+        cf = rj->field = cr->rec.tqh_first;
     else
-        cf = rj->field = cf->chain.le_next;
+        cf = rj->field = cf->chain.tqe_next;
     
     if(cf)
     {
@@ -641,7 +641,7 @@ char* mod(int mode, const char* key, const char* keyval,
         if(mode & MOD_THIS)
             mode = (mode & ~MOD_THIS) | MOD_NEXT;
         
-        f = r->rec.lh_first;
+        f = r->rec.tqh_first;
         while(f)
         {
             if(found != 2 && (!field || !strcmp(f->field, field)))
@@ -658,11 +658,11 @@ char* mod(int mode, const char* key, const char* keyval,
                     goto found;
                 found = 1;
             }
-            if(!f->chain.le_next && found == 1 && (mode & MOD_ADD))
+            if(!f->chain.tqe_next && found == 1 && (mode & MOD_ADD))
                 goto found;
-            f = f->chain.le_next;
+            f = f->chain.tqe_next;
         }
-        f = r->rec.lh_first; // stop of *_only
+        f = r->rec.tqh_first; // stop of *_only
         found = 0;
     }
     
@@ -675,10 +675,10 @@ notfound:
             // add new record
             r = (struct chain_record*) malloc(sizeof(struct chain_record));
             CIRCLEQ_INSERT_HEAD(j, r, chain);
-            LIST_INIT(&r->rec);
+            TAILQ_INIT(&r->rec);
             // add key
             f = (struct chain_field*) malloc(sizeof(struct chain_field));
-            LIST_INSERT_HEAD(&r->rec, f, chain);
+            TAILQ_INSERT_TAIL(&r->rec, f, chain);
             f->field = (char*) malloc((strlen(key)+1)*sizeof(char));
             strcpy(f->field, key);
             f->value = (char*) malloc((strlen(keyval)+1)*sizeof(char));
@@ -712,18 +712,18 @@ found:
         case MOD_DEL:
             free(modf->field);
             free(modf->value);
-            LIST_REMOVE(modf, chain);
+            TAILQ_REMOVE(&r->rec, modf, chain);
             free(modf);
             return (char*) key;
         case MOD_DEL_REC:
-            f = r->rec.lh_first;
+            f = r->rec.tqh_first;
             while(f)
             {
                 free(f->field);
                 free(f->value);
-                LIST_REMOVE(f, chain);
+                TAILQ_REMOVE(&r->rec, f, chain);
                 free(f);
-                f = r->rec.lh_first;
+                f = r->rec.tqh_first;
             }
             CIRCLEQ_REMOVE(j, r, chain);
             rj->rec = j->cqh_first;
@@ -731,7 +731,7 @@ found:
             return (char*) key;
         case MOD_ADD:
             f = (struct chain_field*) malloc(sizeof(struct chain_field));
-            LIST_INSERT_HEAD(&r->rec, f, chain);
+            TAILQ_INSERT_TAIL(&r->rec, f, chain);
             f->field = (char*) malloc((strlen(field)+1)*sizeof(char));
             strcpy(f->field, field);
             f->value = (char*) malloc((strlen(elem1)+1)*sizeof(char));
