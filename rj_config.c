@@ -51,6 +51,6 @@ void rj_config_next(char **field, char **value, struct recordjar *rj)
 {
     rj_next(field, value, rj);
     
-    if(!strcmp("section", *field))
+    if(*field && !strcmp("section", *field))
         rj_next(field, value, rj);
 }
