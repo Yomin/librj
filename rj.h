@@ -45,6 +45,7 @@ typedef void rj_mapfold_func(int info, char** field, char** value,
 int  rj_load(const char* file, struct recordjar* rj);
 int  rj_save(const char* file, struct recordjar* rj);
 void rj_free(struct recordjar* rj);
+void rj_init(struct recordjar* rj);
 
 const char *rj_strerror(int error);
 

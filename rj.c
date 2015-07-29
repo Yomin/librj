@@ -75,24 +75,29 @@ struct chain_record
 CIRCLEQ_HEAD(jar, chain_record);
 
 
+void rj_init(struct recordjar *rj)
+{
+    memset(rj, 0, sizeof(struct recordjar));
+    rj->jar = malloc(sizeof(struct jar));
+    CIRCLEQ_INIT((struct jar*)rj->jar);
+}
+
 int rj_load(const char* file, struct recordjar* rj)
 {
     FILE* fp = fopen(file, "r");
     if(!fp)
         return errno;
     
-    struct jar* j = (struct jar*) malloc(sizeof(struct jar));
-    rj->jar = j;
-    CIRCLEQ_INIT(j);
+    rj_init(rj);
     
-    struct chain_record* cr = (struct chain_record*) malloc(sizeof(struct chain_record));
+    struct jar* j = rj->jar;
+
+    struct chain_record *cr = malloc(sizeof(struct chain_record));
     CIRCLEQ_INSERT_TAIL(j, cr, chain);
-    struct record* r = &cr->rec;
     rj->rec = cr;
-    TAILQ_INIT(r);
     
-    rj->size = 0;
-    rj->field = 0;
+    struct record* r = &cr->rec;
+    TAILQ_INIT(r);
     
     char* line = 0;
     size_t size;
@@ -168,7 +173,7 @@ int rj_load(const char* file, struct recordjar* rj)
             if(prevtype == PREV_FIELD)
             {
                 DEBUG(printf("  new record\n"));
-                cr = (struct chain_record*) malloc(sizeof(struct chain_record));
+                struct chain_record *cr = (struct chain_record*) malloc(sizeof(struct chain_record));
                 CIRCLEQ_INSERT_TAIL(j, cr, chain);
                 r = &cr->rec;
                 TAILQ_INIT(r);
