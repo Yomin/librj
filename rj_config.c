@@ -35,7 +35,7 @@ void rj_config_set(const char *section, const char *field, const char *value, st
 {
     if(rj_get("section", section, 0, 0, rj))
     {
-        if(!rj_set_only(0, 0, field, value, rj))
+        if(rj_set_only(0, 0, field, value, rj))
             rj_add(0, 0, field, value, rj);
     }
     else
